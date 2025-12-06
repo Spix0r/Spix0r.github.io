@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spix0r - Security Researcher & Bug Hunter</title>
+    <link rel="icon" type="image/png" href="https://cdn.hashnode.com/res/hashnode/image/upload/v1764525560202/1e60f49c-cf13-431d-b441-3753df0ad5b3.jpeg?auto=compress,format&format=webp&fm=png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0d0d0d, #000),
+                        repeating-radial-gradient(circle, #111 0, #111 2px, #000 3px);
+            font-family: 'Courier New', monospace;
+        }
+
+        #webCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.98) 0%, rgba(10, 10, 10, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid transparent;
+            border-image: linear-gradient(90deg, transparent, #c0c0c0, transparent) 1;
+            padding: 25px 0;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8), 0 0 40px rgba(192, 192, 192, 0.1);
+        }
+        
+        nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 50%, rgba(192, 192, 192, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 90% 50%, rgba(192, 192, 192, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        nav::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(192, 192, 192, 0.2) 10%,
+                rgba(192, 192, 192, 0.5) 50%,
+                rgba(192, 192, 192, 0.2) 90%,
+                transparent 100%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 50%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            position: relative;
+            padding: 8px 0;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+        }
+        
+        .nav-brand::before {
+            content: '🕷️';
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.5));
+            animation: spiderFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes spiderFloat {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            50% { transform: translateY(-50%) translateX(-5px); }
+        }
+        
+        .nav-brand::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #c0c0c0, transparent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        
+        .nav-brand:hover::after {
+            transform: scaleX(1);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #d0d0d0;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 10px 22px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(192, 192, 192, 0.15), transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+        
+        .nav-link:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .nav-link:hover {
+            border-color: #c0c0c0;
+            background: rgba(192, 192, 192, 0.08);
+            box-shadow: 0 0 20px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 20px 40px;
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px 60px;
+            position: relative;
+            flex-direction: column;
+            text-align: center;
+            animation: fadeInUp 1.2s ease-out forwards;
+            opacity: 0;
+        }
+
+        .profile-image-container {
+            position: relative;
+            margin-bottom: 40px;
+            animation: scaleIn 1.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .profile-image-wrapper {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            position: relative;
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            padding: 6px;
+            box-shadow: 
+                0 10px 40px rgba(192, 192, 192, 0.2),
+                0 0 60px rgba(192, 192, 192, 0.1),
+                inset 0 0 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s ease;
+        }
+
+        .profile-image-wrapper:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 15px 50px rgba(192, 192, 192, 0.3),
+                0 0 80px rgba(192, 192, 192, 0.2);
+        }
+
+        .profile-image-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, 
+                #c0c0c0 0%, 
+                transparent 40%, 
+                transparent 60%, 
+                #c0c0c0 100%);
+            opacity: 0.6;
+            animation: rotate 4s linear infinite;
+            z-index: -1;
+        }
+
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+            border: 3px solid #000;
+        }
+
+        .profile-content {
+            animation: fadeIn 1.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .main-name {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #e8e8e8;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            line-height: 1.2;
+            text-shadow: 
+                2px 2px 0px #333,
+                4px 4px 0px #222,
+                6px 6px 20px rgba(192, 192, 192, 0.3);
+        }
+
+        .main-name::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #c0c0c0, transparent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            color: #999;
+            margin-top: 25px;
+            letter-spacing: 3px;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+        
+        .subtitle .separator {
+            display: inline;
+        }
+        
+        .subtitle br {
+            display: none;
+        }
+
+        @keyframes scaleIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) rotate(-10deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .section {
+            margin: 60px 0;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            color: #c0c0c0;
+            margin-bottom: 30px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::before {
+            content: '🕷 ';
+            color: #666;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #c0c0c0 0%, transparent 100%);
+        }
+
+        .projects {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .publications {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .project-card, .publication-card {
+            background: linear-gradient(145deg, #111, #1a1a1a);
+            border: 1px solid #2a2a2a;
+            border-radius: 18px;
+            padding: 30px;
+            transition: all 0.35s ease;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 0 rgba(192, 192, 192, 0);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover, .publication-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: #c0c0c0;
+            box-shadow: 0 0 25px rgba(192, 192, 192, 0.25);
+        }
+
+        .project-card::before, .publication-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(180, 180, 180, 0.18), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .project-card:hover::before, .publication-card:hover::before {
+            opacity: 1;
+        }
+
+        .project-title, .publication-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #e0e0e0;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .project-desc, .publication-excerpt {
+            color: #999;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            font-size: 0.9rem;
+        }
+
+        .project-link, .publication-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #c0c0c0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 12px 24px;
+            border: 1px solid #c0c0c0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-top: auto;
+            width: 100%;
+            text-align: center;
+        }
+
+        .project-link:hover, .publication-link:hover {
+            background: #c0c0c0;
+            color: #000;
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .publication-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .publication-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+            transition: transform 0.3s ease;
+        }
+
+        .publication-card:hover .publication-image {
+            transform: scale(1.05);
+        }
+
+        .publication-loading {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
+        .publication-error {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .publication-meta {
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            border-top: 1px solid #2a2a2a;
+            margin-top: 80px;
+        }
+
+        @media (max-width: 1024px) {
+            .projects, .publications {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .profile-image-wrapper {
+                width: 220px;
+                height: 220px;
+            }
+
+            .main-name {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .subtitle br {
+                display: block;
+            }
+            
+            .subtitle .separator {
+                display: none;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .projects, .publications {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="webCanvas"></canvas>
+
+    <nav>
+        <div class="nav-container">
+            <div class="nav-brand">SPIX0R</div>
+            <div class="nav-links">
+                <a href="https://blog.mirzadzare.net" class="nav-link" target="_blank" rel="noopener">
+                    Blog
+                </a>
+                <a href="https://github.com/spix0r" class="nav-link" target="_blank" rel="noopener">
+                    GitHub
+                </a>
+                <a href="https://www.linkedin.com/in/mirzaadzare/" class="nav-link" target="_blank" rel="noopener">
+                    LinkedIn
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="profile-section">
+            <div class="profile-image-container">
+                <div class="profile-image-wrapper">
+                    <img src="pic.jpg" 
+                         alt="Mohammadreza Mirzadzare" 
+                         class="profile-image">
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <h1 class="main-name">MOHAMMADREZA MIRZADZARE</h1>
+                <p class="subtitle">Penetration Tester<span class="separator"> | </span><br>Bug Bounty Hunter</p>
+            </div>
+        </div>
+
+        <section class="section">
+            <h2 class="section-title">Projects</h2>
+            <div class="projects">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/writeup-miner', '_blank')">
+                    <h3 class="project-title">writeup-miner</h3>
+                    <p class="project-desc">
+                        Python script for extracting bug bounty write-ups from RSS feeds. 
+                        Automates the collection and analysis of security research from multiple sources.
+                    </p>
+                    <a href="https://github.com/spix0r/writeup-miner" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/robofinder', '_blank')">
+                    <h3 class="project-title">robofinder</h3>
+                    <p class="project-desc">
+                        Retrieves historical robots.txt files from Archive.org for any domain. 
+                        Essential for OSINT and recon processes to discover old directories and paths.
+                    </p>
+                    <a href="https://github.com/spix0r/robofinder" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/cloudrecon', '_blank')">
+                    <h3 class="project-title">cloudrecon</h3>
+                    <p class="project-desc">
+                        Cloud certificate entity search tool for Amazon, Azure, and other providers. 
+                        Leverages kaeferjaeger.gay data for comprehensive cloud reconnaissance.
+                    </p>
+                    <a href="https://github.com/spix0r/cloudrecon" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/nuclei-templates', '_blank')">
+                    <h3 class="project-title">Nuclei Community Templates</h3>
+                    <p class="project-desc">
+                        A collaborative hub for Nuclei templates. Contribute, share, and explore powerful vulnerability detection tools!
+                    </p>
+                    <a href="https://github.com/spix0r/nuclei-templates" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/fback', '_blank')">
+                    <h3 class="project-title">Fback</h3>
+                    <p class="project-desc">
+                        A lightning-fast CLI tool for generating target-specific wordlists to fuzz backup files
+                    </p>
+                    <a href="https://github.com/spix0r/fback" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/Django-Pickle-RCE', '_blank')">
+                    <h3 class="project-title">Django Pickle RCE Exploit Tool</h3>
+                    <p class="project-desc">
+                        A Python tool for exploiting Django RCE via deserialization vulnerabilities in session cookies, allowing remote code execution through forged cookies.
+                    </p>
+                    <a href="https://github.com/spix0r/Django-Pickle-RCE" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Publications</h2>
+            <div class="publications" id="publicationsContainer">
+                <div class="publication-card">
+                    <div class="publication-loading">Loading posts...</div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2024 Mohammadreza Mirzadzare | Security Researcher</p>
+            <p style="margin-top: 10px; color: #444;">To hack a thing, first learn to build it.</p>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('webCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Node {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.3;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+        }
+
+        const nodes = [];
+        const nodeCount = 80;
+
+        for (let i = 0; i < nodeCount; i++) {
+            nodes.push(new Node(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height
+            ));
+        }
+
+        function drawWeb() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            nodes.forEach(node => {
+                node.update();
+            });
+
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        ctx.strokeStyle = `rgba(192, 192, 192, ${0.15 * (1 - distance / 150)})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(nodes[i].x, nodes[i].y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(drawWeb);
+        }
+
+        drawWeb();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        async function fetchBlogPosts() {
+            const publicationsContainer = document.getElementById('publicationsContainer');
+            
+            try {
+                const query = `
+                    query Publication {
+                        publication(host: "blog.mirzadzare.net") {
+                            posts(first: 6) {
+                                edges {
+                                    node {
+                                        title
+                                        brief
+                                        url
+                                        coverImage {
+                                            url
+                                        }
+                                        publishedAt
+                                    }
+                                }
+                            }
+                        }
+                    }
+                `;
+                
+                const response = await fetch('https://gql.hashnode.com', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                const posts = data.data.publication.posts.edges;
+                
+                if (posts && posts.length > 0) {
+                    publicationsContainer.innerHTML = posts.map(({ node: post }) => {
+                        const date = new Date(post.publishedAt).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                        
+                        const image = post.coverImage?.url || 'https://cdn.hashnode.com/res/hashnode/image/upload/v1764576051910/3a8c5ccf-2200-4137-b272-92846e051439.png?w=1600&h=840&fit=crop&crop=entropy&auto=compress,format&format=webp';
+                        
+                        return `
+                            <div class="publication-card" onclick="window.open('${post.url}', '_blank')">
+                                <img src="${image}" alt="${post.title}" class="publication-image" onerror="this.src='https://cdn.hashnode.com/res/hashnode/image/upload/v1764576051910/3a8c5ccf-2200-4137-b272-92846e051439.png?w=1600&h=840&fit=crop&crop=entropy&auto=compress,format&format=webp'">
+                                <div class="publication-meta">Security Research • ${date}</div>
+                                <h3 class="publication-title">${post.title}</h3>
+                                <p class="publication-excerpt">${post.brief}</p>
+                                <a href="${post.url}" class="publication-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">Read More →</a>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    publicationsContainer.innerHTML = '<div class="publication-card"><div class="publication-error">No posts found</div></div>';
+                }
+            } catch (error) {
+                console.error('Error loading blog posts:', error);
+                publicationsContainer.innerHTML = `
+                    <div class="publication-card">
+                        <div class="publication-meta">Security Research • Latest Articles</div>
+                        <h3 class="publication-title">Latest Security Insights</h3>
+                        <p class="publication-excerpt">
+                            Explore in-depth security research, vulnerability analysis, and bug bounty hunting techniques. 
+                            Visit the blog to read the latest articles.
+                        </p>
+                        <a href="https://blog.mirzadzare.net" class="publication-link" target="_blank" rel="noopener">Visit Blog →</a>
+                    </div>
+                `;
+            }
+        }
+        
+        fetchBlogPosts();
+    </script>
+</body>
+</html>
