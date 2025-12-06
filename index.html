@@ -403,6 +403,24 @@
             display: flex;
             flex-direction: column;
         }
+        
+        .card-glow {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(192, 192, 192, 0.3);
+            filter: blur(60px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+        
+        .project-card:hover .card-glow,
+        .publication-card:hover .card-glow {
+            opacity: 1;
+        }
 
         .project-card:hover, .publication-card:hover {
             transform: translateY(-10px) scale(1.02);
@@ -618,7 +636,8 @@
         <section class="section">
             <h2 class="section-title">Projects</h2>
             <div class="projects">
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/writeup-miner', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/writeup-miner', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">writeup-miner</h3>
                     <p class="project-desc">
                         Python script for extracting bug bounty write-ups from RSS feeds. 
@@ -626,7 +645,8 @@
                     </p>
                     <a href="https://github.com/spix0r/writeup-miner" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
                 </div>
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/robofinder', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/robofinder', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">robofinder</h3>
                     <p class="project-desc">
                         Retrieves historical robots.txt files from Archive.org for any domain. 
@@ -634,7 +654,8 @@
                     </p>
                     <a href="https://github.com/spix0r/robofinder" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
                 </div>
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/cloudrecon', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/cloudrecon', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">cloudrecon</h3>
                     <p class="project-desc">
                         Cloud certificate entity search tool for Amazon, Azure, and other providers. 
@@ -642,21 +663,24 @@
                     </p>
                     <a href="https://github.com/spix0r/cloudrecon" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
                 </div>
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/nuclei-templates', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/nuclei-templates', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">Nuclei Community Templates</h3>
                     <p class="project-desc">
                         A collaborative hub for Nuclei templates. Contribute, share, and explore powerful vulnerability detection tools!
                     </p>
                     <a href="https://github.com/spix0r/nuclei-templates" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
                 </div>
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/fback', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/fback', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">Fback</h3>
                     <p class="project-desc">
                         A lightning-fast CLI tool for generating target-specific wordlists to fuzz backup files
                     </p>
                     <a href="https://github.com/spix0r/fback" class="project-link" target="_blank" rel="noopener" onclick="event.stopPropagation()">View on GitHub →</a>
                 </div>
-                <div class="project-card" onclick="window.open('https://github.com/spix0r/Django-Pickle-RCE', '_blank')">
+                <div class="project-card" onclick="window.open('https://github.com/spix0r/Django-Pickle-RCE', '_blank')" onmousemove="updateGlow(event, this)">
+                    <div class="card-glow"></div>
                     <h3 class="project-title">Django Pickle RCE Exploit Tool</h3>
                     <p class="project-desc">
                         A Python tool for exploiting Django RCE via deserialization vulnerabilities in session cookies, allowing remote code execution through forged cookies.
@@ -824,6 +848,33 @@
         }
         
         fetchBlogPosts();
+        
+        // Mouse glow effect for cards
+        function updateGlow(e, card) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const glow = card.querySelector('.card-glow');
+            if (glow) {
+                glow.style.left = x + 'px';
+                glow.style.top = y + 'px';
+            }
+        }
+        
+        // Add glow effect to dynamically loaded publication cards
+        document.addEventListener('mouseover', function(e) {
+            if (e.target.closest('.publication-card')) {
+                const card = e.target.closest('.publication-card');
+                if (!card.querySelector('.card-glow')) {
+                    const glow = document.createElement('div');
+                    glow.className = 'card-glow';
+                    card.insertBefore(glow, card.firstChild);
+                }
+                card.addEventListener('mousemove', function(event) {
+                    updateGlow(event, card);
+                });
+            }
+        });
     </script>
 </body>
 </html>
