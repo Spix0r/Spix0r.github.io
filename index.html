@@ -527,8 +527,24 @@
             }
 
             .nav-links {
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 justify-content: center;
+                gap: 10px;
+            }
+            
+            .nav-link {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+            
+            .nav-brand {
+                font-size: 1.5rem;
+            }
+            
+            .nav-brand::before {
+                left: -35px;
+                font-size: 1.2rem;
             }
 
             .profile-image-wrapper {
@@ -558,12 +574,6 @@
 
             .projects, .publications {
                 grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 415px) {
-            .container {
-                margin-top: 70px;
             }
         }
     </style>
